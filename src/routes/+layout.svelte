@@ -4,8 +4,10 @@
 	let { children } = $props();
 </script>
 
-<Header title="Untitled Spreadsheet" />
-<main>
-	{@render children()}
-</main>
-<footer></footer>
+<div class="flex h-screen flex-col">
+	<Header title="Untitled Spreadsheet" />
+	<main class="flex h-0 grow flex-col">
+		{@render children()}
+	</main>
+	<footer></footer>
+</div>
