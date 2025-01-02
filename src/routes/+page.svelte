@@ -16,12 +16,11 @@
 	nodes.set('A4', { value: '2024-12-26' });
 	nodes.set('B4', { value: '140' });
 	nodes.set('B5', { value: '=SUM(B2:B4)' });
-	console.log(getKey(1, 1));
 
 	let selectedNodes = new SvelteSet<string>(['0,0']);
 
 	let activeNode = $state<[number, number]>([3, 3]);
-	let editing = $state(false);
+	let cellEditing = $state<'notEditing' | 'addingText' | 'fullyEditing'>('notEditing');
 
 	function getKey(row: number, col: number) {
 		const rowName = row;
@@ -56,36 +55,58 @@
 	}
 
 	onMount(() => {
+		async function focusCell() {
+			await tick();
+			const id = 'button-' + getKey(...activeNode);
+			const element = document.getElementById(id) as HTMLButtonElement;
+			element?.focus();
+		}
 		document.addEventListener('keydown', async (e) => {
-			if (editing) return;
+			console.log(cellEditing);
 
-			editing = false;
+			if (cellEditing === 'fullyEditing') return;
+
 			if (e.key === 'ArrowUp') {
 				activeNode[0]--;
+				cellEditing = 'notEditing';
+				focusCell();
 			} else if (e.key === 'ArrowDown') {
 				activeNode[0]++;
+				cellEditing = 'notEditing';
+				focusCell();
 			} else if (e.key === 'ArrowLeft') {
 				activeNode[1]--;
+				cellEditing = 'notEditing';
+				focusCell();
 			} else if (e.key === 'ArrowRight') {
 				activeNode[1]++;
+				cellEditing = 'notEditing';
+				focusCell();
 			} else if (e.key === 'Enter') {
-				editing = true;
+				cellEditing = 'fullyEditing';
 				await tick();
-				const element = document.getElementById(getKey(...activeNode)) as
-					| HTMLInputElement
-					| undefined;
-
-				if (element) {
-					element.focus();
-				}
+				const element = document.getElementById(getKey(...activeNode)) as HTMLInputElement;
+				element?.focus();
+				return;
+			} else {
+				/*await tick();
+				const id = 'button-' + getKey(...activeNode);
+				const element = document.getElementById(id) as HTMLButtonElement;
+				element?.focus();*/
 			}
+			/*if (cellEditing === 'addingText') {
+				await tick();
+				const id = 'button-' + getKey(...activeNode);
+				const element = document.getElementById(id) as HTMLButtonElement;
+				console.log(element);
+				element?.focus();
+			}*/
 		});
 	});
 </script>
 
 <div class="flex h-0 w-full grow flex-col overflow-hidden border-border/60 p-4">
-	{#each Array.from({ length: 10 }) as _, row}
-		{console.log('row')}
+	{#each Array.from({ length: 200 }) as _, row ('row-' + row)}
 		<div class="flex w-min first:border-t">
 			<button
 				class={cn(
@@ -93,7 +114,7 @@
 				)}
 				>{row}
 			</button>
-			{#each Array.from({ length: 10 }) as _, col}
+			{#each Array.from({ length: 200 }) as _, col ('col-' + col)}
 				{#if row === 0}
 					<button
 						class={cn(
@@ -102,9 +123,10 @@
 					>
 				{:else}
 					<button
+						id={'button-' + getKey(row, col)}
 						ondblclickcapture={async (e) => {
-							if (editing) return;
-							editing = true;
+							if (cellEditing !== 'notEditing') return;
+							cellEditing = 'fullyEditing';
 							activeNode = [row, col];
 
 							const element = e.currentTarget;
@@ -117,13 +139,15 @@
 							}
 						}}
 						onclick={async (event) => {
-							if (editing) return;
+							if (cellEditing !== 'notEditing') return;
 							activeNode = [row, col];
-							editing = false;
+							cellEditing = 'notEditing';
 						}}
 						onkeypress={async (e) => {
-							if (editing) return;
-							editing = true;
+							console.log('key!!!');
+
+							if (cellEditing !== 'notEditing') return;
+							cellEditing = 'addingText';
 							activeNode = [row, col];
 
 							const element = e.currentTarget;
@@ -136,11 +160,6 @@
 								}
 							}
 						}}
-						onfocusout={(e) => {
-							//console.log('focusout', getKey(row, col));
-							/*nodes.set(getKey(row, col), { value: e.currentTarget.value });
-							editing = false;*/
-						}}
 						class={cn(
 							'focus-within:outline-none',
 							'flex h-6 w-24 items-center justify-end border-b border-l border-border text-right text-xs font-semibold last:border-r',
@@ -150,20 +169,18 @@
 							getKey(...activeNode) === getKey(row, col) && 'border-2 border-primary'
 						)}
 					>
-						{#if getKey(...activeNode) === getKey(row, col) && editing}
+						{#if getKey(...activeNode) === getKey(row, col) && cellEditing !== 'notEditing'}
 							<input
 								id={getKey(row, col)}
 								value={nodes.get(getKey(row, col))?.value ?? ''}
 								type="text"
 								class="h-full w-full p-1"
 								onfocusout={(e) => {
-									//selectedNodes.delete(getKey(row, col));
-									editing = false;
+									cellEditing = 'notEditing';
 								}}
 								onchange={(e) => {
 									nodes.set(getKey(row, col), { value: e.currentTarget.value });
-									//selectedNodes.delete(getKey(row, col));
-									editing = false;
+									cellEditing = 'notEditing';
 								}}
 							/>
 						{:else if nodes.get(getKey(row, col))}
