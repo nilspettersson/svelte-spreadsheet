@@ -1,26 +1,32 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 	import { onMount, tick } from 'svelte';
-	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
 	type Node = {
 		value: string;
+		editing: 'notEditing' | 'addingText' | 'fullyEditing';
+		selected: boolean;
 	};
-	let nodes = new SvelteMap<string, Node>();
-	nodes.set('A1', { value: 'Date' });
-	nodes.set('B1', { value: 'Amount' });
-	nodes.set('A2', { value: '2024-12-23' });
-	nodes.set('B2', { value: '5000' });
-	nodes.set('A3', { value: '2024-12-24' });
-	nodes.set('B3', { value: '1200' });
-	nodes.set('A4', { value: '2024-12-26' });
-	nodes.set('B4', { value: '140' });
-	nodes.set('B5', { value: '=SUM(B2:B4)' });
 
-	let selectedNodes = new SvelteSet<string>(['0,0']);
+	let cells = $state<Node[][]>(
+		Array.from({ length: 200 }, () =>
+			Array.from({ length: 200 }, () => ({ value: '', editing: 'notEditing', selected: false }))
+		)
+	);
+	cells[1][0].value = 'Date';
+	cells[1][1].value = 'Amount';
 
-	let activeNode = $state<[number, number]>([3, 3]);
-	let cellEditing = $state<'notEditing' | 'addingText' | 'fullyEditing'>('notEditing');
+	cells[2][0].value = '2024-12-23';
+	cells[2][1].value = '5000';
+
+	cells[3][0].value = '2024-12-24';
+	cells[3][1].value = '1200';
+
+	cells[4][0].value = '2024-12-26';
+	cells[4][1].value = '140';
+	cells[4][1].selected = true;
+
+	cells[5][1].value = '=SUM(B2:B4)';
 
 	function getKey(row: number, col: number) {
 		const rowName = row;
@@ -42,7 +48,7 @@
 
 			for (let row = startRow; row <= endRow; row++) {
 				for (let col = startCol; col <= endCol; col++) {
-					const node = nodes.get(getKey(row, col));
+					const node = cells[row][col];
 					if (node === undefined) continue;
 					const value = parseInt(node.value);
 					if (!isNaN(value)) {
@@ -54,80 +60,92 @@
 		}
 	}
 
+	function getCurrentCellPosition(cells: Node[][]): [number, number] {
+		let row = 0;
+		let col = 0;
+
+		cells.forEach((cellRow, i) => {
+			cellRow.forEach((cell, j) => {
+				if (cell.selected) {
+					row = i;
+					col = j;
+				}
+			});
+		});
+		return [row, col];
+	}
+
+	function getCurrentCell(cells: Node[][]) {
+		return cells.find((row) => row.find((cell) => cell.selected));
+	}
+
 	onMount(() => {
 		async function focusCell() {
 			await tick();
-			const id = 'button-' + getKey(...activeNode);
+			const id = 'button-' + getKey(...getCurrentCellPosition(cells));
 			const element = document.getElementById(id) as HTMLButtonElement;
 			element?.focus();
 		}
 		document.addEventListener('keydown', async (e) => {
-			console.log(cellEditing);
+			const [row, col] = getCurrentCellPosition(cells);
+			const cell = cells[row][col];
 
-			if (cellEditing === 'fullyEditing') return;
+			if (cell.editing === 'fullyEditing') return;
 
-			if (e.key === 'ArrowUp') {
-				activeNode[0]--;
-				cellEditing = 'notEditing';
+			if (e.key === 'ArrowUp' && cells[row - 2]?.[col] !== undefined) {
+				cell.selected = false;
+				cell.editing = 'notEditing';
+				cells[row - 1][col].selected = true;
 				focusCell();
-			} else if (e.key === 'ArrowDown') {
-				activeNode[0]++;
-				cellEditing = 'notEditing';
+			} else if (e.key === 'ArrowDown' && cells[row + 1]?.[col] !== undefined) {
+				cell.selected = false;
+				cell.editing = 'notEditing';
+				cells[row + 1][col].selected = true;
 				focusCell();
-			} else if (e.key === 'ArrowLeft') {
-				activeNode[1]--;
-				cellEditing = 'notEditing';
+			} else if (e.key === 'ArrowLeft' && cells[row]?.[col - 1] !== undefined) {
+				cell.selected = false;
+				cell.editing = 'notEditing';
+				cells[row][col - 1].selected = true;
 				focusCell();
-			} else if (e.key === 'ArrowRight') {
-				activeNode[1]++;
-				cellEditing = 'notEditing';
+			} else if (e.key === 'ArrowRight' && cells[row]?.[col + 1] !== undefined) {
+				cell.selected = false;
+				cell.editing = 'notEditing';
+				cells[row][col + 1].selected = true;
 				focusCell();
 			} else if (e.key === 'Enter') {
-				cellEditing = 'fullyEditing';
+				cell.editing = 'fullyEditing';
 				await tick();
-				const element = document.getElementById(getKey(...activeNode)) as HTMLInputElement;
+				const element = document.getElementById(getKey(row, col)) as HTMLInputElement;
 				element?.focus();
 				return;
-			} else {
-				/*await tick();
-				const id = 'button-' + getKey(...activeNode);
-				const element = document.getElementById(id) as HTMLButtonElement;
-				element?.focus();*/
 			}
-			/*if (cellEditing === 'addingText') {
-				await tick();
-				const id = 'button-' + getKey(...activeNode);
-				const element = document.getElementById(id) as HTMLButtonElement;
-				console.log(element);
-				element?.focus();
-			}*/
 		});
 	});
 </script>
 
 <div class="flex h-0 w-full grow flex-col overflow-hidden border-border/60 p-4">
-	{#each Array.from({ length: 200 }) as _, row ('row-' + row)}
+	{#each cells as row, rowIndex}
 		<div class="flex w-min first:border-t">
 			<button
 				class={cn(
 					'flex h-6 w-12 items-center justify-center border-b border-l border-border text-right text-xs font-semibold last:border-r'
 				)}
-				>{row}
+				>{rowIndex}
 			</button>
-			{#each Array.from({ length: 200 }) as _, col ('col-' + col)}
-				{#if row === 0}
+			{#each row as cell, colIndex}
+				{#if rowIndex === 0}
 					<button
 						class={cn(
 							'flex h-6 w-24 items-center justify-center border-b border-l border-border text-right text-xs font-semibold last:border-r'
-						)}>{String.fromCharCode(col + 65)}</button
+						)}>{String.fromCharCode(colIndex + 65)}</button
 					>
 				{:else}
 					<button
-						id={'button-' + getKey(row, col)}
+						id={'button-' + getKey(rowIndex, colIndex)}
 						ondblclickcapture={async (e) => {
-							if (cellEditing !== 'notEditing') return;
-							cellEditing = 'fullyEditing';
-							activeNode = [row, col];
+							if (cell.editing !== 'notEditing') return;
+							cell.editing = 'fullyEditing';
+							cell.selected = true;
 
 							const element = e.currentTarget;
 							if (element.firstElementChild) {
@@ -139,16 +157,15 @@
 							}
 						}}
 						onclick={async (event) => {
-							if (cellEditing !== 'notEditing') return;
-							activeNode = [row, col];
-							cellEditing = 'notEditing';
+							if (cell.editing !== 'notEditing') return;
+							const [row, col] = getCurrentCellPosition(cells);
+							cells[row][col].selected = false;
+							cell.selected = true;
+							cell.editing = 'notEditing';
 						}}
 						onkeypress={async (e) => {
-							console.log('key!!!');
-
-							if (cellEditing !== 'notEditing') return;
-							cellEditing = 'addingText';
-							activeNode = [row, col];
+							if (cell.editing !== 'notEditing') return;
+							cell.editing = 'addingText';
 
 							const element = e.currentTarget;
 							if (element.firstElementChild) {
@@ -163,31 +180,29 @@
 						class={cn(
 							'focus-within:outline-none',
 							'flex h-6 w-24 items-center justify-end border-b border-l border-border text-right text-xs font-semibold last:border-r',
-							nodes.has(getKey(row, col)) &&
-								isNaN(parseInt(nodes.get(getKey(row, col))!.value)) &&
-								'justify-start',
-							getKey(...activeNode) === getKey(row, col) && 'border-2 border-primary'
+							isNaN(parseInt(cell.value)) && 'justify-start',
+							cell.selected && 'border-2 border-primary'
 						)}
 					>
-						{#if getKey(...activeNode) === getKey(row, col) && cellEditing !== 'notEditing'}
+						{#if cell.selected && cell.editing !== 'notEditing'}
 							<input
-								id={getKey(row, col)}
-								value={nodes.get(getKey(row, col))?.value ?? ''}
+								id={getKey(rowIndex, colIndex)}
+								value={cell.value ?? ''}
 								type="text"
 								class="h-full w-full p-1"
 								onfocusout={(e) => {
-									cellEditing = 'notEditing';
+									cell.editing = 'notEditing';
 								}}
 								onchange={(e) => {
-									nodes.set(getKey(row, col), { value: e.currentTarget.value });
-									cellEditing = 'notEditing';
+									cell.value = e.currentTarget.value;
+									cell.editing = 'notEditing';
 								}}
 							/>
-						{:else if nodes.get(getKey(row, col))}
-							{#if nodes.get(getKey(row, col))!.value.startsWith('=')}
-								<span class="p-1">{calculateFunction(nodes.get(getKey(row, col))!.value)}</span>
+						{:else if cell.value.length > 0}
+							{#if cell.value.startsWith('=')}
+								<span class="p-1">{calculateFunction(cell.value)}</span>
 							{:else}
-								<span class="p-1">{nodes.get(getKey(row, col))!.value}</span>
+								<span class="p-1">{cell.value}</span>
 							{/if}
 						{:else}
 							<span></span>
