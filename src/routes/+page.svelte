@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils';
 	import { onMount, tick } from 'svelte';
+	import MaterialSymbolsFunctionRounded from '~icons/material-symbols/function-rounded';
 
 	type Node = {
 		value: string;
@@ -55,7 +56,7 @@
 		}
 	}
 
-	let selectedCell: [number, number] | null = null;
+	let selectedCell: [number, number] | null = $state(null);
 	setSelectedCell(4, 1);
 	function setSelectedCell(row: number, col: number) {
 		if (selectedCell !== null) {
@@ -87,27 +88,46 @@
 				setSelectedCell(row, col - 1);
 			} else if (e.key === 'ArrowRight' && cells[row]?.[col + 1] !== undefined) {
 				setSelectedCell(row, col + 1);
-			} else if (e.key === 'Enter') {
+			} else if (e.key === 'Enter' && cell.editing !== 'addingText') {
 				cell.editing = 'fullyEditing';
 				await tick();
 				const element = document.getElementById(getKey(row, col)) as HTMLInputElement;
 				element?.focus();
-				return;
-			} else return;
+				console.log(element);
 
-			cell.editing = 'notEditing';
-			e.preventDefault();
-			focusCell();
+				return;
+			}
+
+			if (
+				e.key === 'ArrowUp' ||
+				e.key === 'ArrowDown' ||
+				e.key === 'ArrowLeft' ||
+				e.key === 'ArrowRight'
+			) {
+				cell.editing = 'notEditing';
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				focusCell();
+			}
 		});
 	});
 </script>
 
-<div class="flex h-0 w-full grow flex-col overflow-auto border-border/60 p-4">
+<div class="flex gap-2 py-2">
+	<p class="w-12 border-r text-center text-sm">{getKey(...(selectedCell ?? [0, 0]))}</p>
+	<div class="flex items-center">
+		<MaterialSymbolsFunctionRounded class=" size-5 text-muted-foreground" />
+		<p class="text-sm text-foreground/80">
+			{cells[selectedCell?.[0] ?? 0][selectedCell?.[1] ?? 0].value}
+		</p>
+	</div>
+</div>
+<div class="flex h-0 w-full grow flex-col overflow-auto border-border/60">
 	{#each cells as row, rowIndex}
 		<div class="flex w-min first:border-t">
 			<button
 				class={cn(
-					'flex h-6 w-12 items-center justify-center border-b border-l border-border text-right text-xs font-semibold last:border-r'
+					'flex h-6 w-12 items-center justify-center border-b border-l border-border text-right text-sm last:border-r'
 				)}
 				>{rowIndex}
 			</button>
@@ -115,7 +135,7 @@
 				{#if rowIndex === 0}
 					<button
 						class={cn(
-							'flex h-6 w-24 items-center justify-center border-b border-l border-border text-right text-xs font-semibold last:border-r'
+							'flex h-6 w-24 items-center justify-center border-b border-l border-border text-right text-sm last:border-r'
 						)}>{String.fromCharCode(colIndex + 65)}</button
 					>
 				{:else}
@@ -135,13 +155,18 @@
 								}
 							}
 						}}
-						onclick={async () => {
+						onclick={async (e) => {
 							if (cell.editing !== 'notEditing') return;
 							setSelectedCell(rowIndex, colIndex);
 							cell.editing = 'notEditing';
 						}}
-						onkeypress={async (e) => {
-							if (cell.editing !== 'notEditing') return;
+						onkeydown={async (e) => {
+							if (cell.editing !== 'notEditing' || e.key === 'Enter') return;
+
+							if (e.key === 'Backspace') {
+								cell.value = '';
+								return;
+							}
 							cell.editing = 'addingText';
 
 							const element = e.currentTarget;
@@ -156,7 +181,7 @@
 						}}
 						class={cn(
 							'focus-within:outline-none',
-							'flex h-6 w-24 items-center justify-end border-b border-l border-border text-right text-xs font-semibold last:border-r',
+							'flex h-6 w-24 items-center justify-end overflow-hidden whitespace-nowrap border-b border-l border-border text-right text-sm last:border-r',
 							isNaN(parseInt(cell.value)) && 'justify-start',
 							cell.selected && 'border-2 border-primary'
 						)}
@@ -173,6 +198,23 @@
 								onchange={(e) => {
 									cell.value = e.currentTarget.value;
 									cell.editing = 'notEditing';
+								}}
+								onkeydown={async (e) => {
+									if (e.key === 'Enter' && cell.editing !== 'notEditing') {
+										e.stopImmediatePropagation();
+										cell.editing = 'notEditing';
+										cell.value = e.currentTarget.value;
+										setSelectedCell(rowIndex + 1, colIndex);
+										await tick();
+										const element = document.getElementById(
+											'button-' + getKey(rowIndex + 1, colIndex)
+										) as HTMLButtonElement | undefined;
+										if (element) {
+											if (element) {
+												element.focus();
+											}
+										}
+									}
 								}}
 							/>
 						{:else if cell.value.length > 0}
