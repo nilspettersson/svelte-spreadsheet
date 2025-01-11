@@ -9,8 +9,8 @@
 	};
 
 	let cells = $state<Node[][]>(
-		Array.from({ length: 200 }, () =>
-			Array.from({ length: 200 }, () => ({ value: '', editing: 'notEditing', selected: false }))
+		Array.from({ length: 1001 }, () =>
+			Array.from({ length: 26 }, () => ({ value: '', editing: 'notEditing', selected: false }))
 		)
 	);
 	cells[1][0].value = 'Date';
@@ -65,10 +65,6 @@
 		selectedCell = [row, col];
 	}
 
-	function getCurrentCell(cells: Node[][]) {
-		return cells.find((row) => row.find((cell) => cell.selected));
-	}
-
 	onMount(() => {
 		async function focusCell() {
 			if (selectedCell === null) return;
@@ -81,37 +77,32 @@
 			if (selectedCell === null) return;
 			const [row, col] = selectedCell;
 			const cell = cells[row][col];
-
 			if (cell.editing === 'fullyEditing') return;
 
 			if (e.key === 'ArrowUp' && cells[row - 2]?.[col] !== undefined) {
 				setSelectedCell(row - 1, col);
-				cell.editing = 'notEditing';
-				focusCell();
 			} else if (e.key === 'ArrowDown' && cells[row + 1]?.[col] !== undefined) {
-				cell.editing = 'notEditing';
 				setSelectedCell(row + 1, col);
-				focusCell();
 			} else if (e.key === 'ArrowLeft' && cells[row]?.[col - 1] !== undefined) {
-				cell.editing = 'notEditing';
 				setSelectedCell(row, col - 1);
-				focusCell();
 			} else if (e.key === 'ArrowRight' && cells[row]?.[col + 1] !== undefined) {
-				cell.editing = 'notEditing';
 				setSelectedCell(row, col + 1);
-				focusCell();
 			} else if (e.key === 'Enter') {
 				cell.editing = 'fullyEditing';
 				await tick();
 				const element = document.getElementById(getKey(row, col)) as HTMLInputElement;
 				element?.focus();
 				return;
-			}
+			} else return;
+
+			cell.editing = 'notEditing';
+			e.preventDefault();
+			focusCell();
 		});
 	});
 </script>
 
-<div class="flex h-0 w-full grow flex-col overflow-hidden border-border/60 p-4">
+<div class="flex h-0 w-full grow flex-col overflow-auto border-border/60 p-4">
 	{#each cells as row, rowIndex}
 		<div class="flex w-min first:border-t">
 			<button
