@@ -15,17 +15,12 @@
 	);
 	cells[1][0].value = 'Date';
 	cells[1][1].value = 'Amount';
-
 	cells[2][0].value = '2024-12-23';
 	cells[2][1].value = '5000';
-
 	cells[3][0].value = '2024-12-24';
 	cells[3][1].value = '1200';
-
 	cells[4][0].value = '2024-12-26';
 	cells[4][1].value = '140';
-	cells[4][1].selected = true;
-
 	cells[5][1].value = '=SUM(B2:B4)';
 
 	function getKey(row: number, col: number) {
@@ -60,19 +55,14 @@
 		}
 	}
 
-	function getCurrentCellPosition(cells: Node[][]): [number, number] {
-		let row = 0;
-		let col = 0;
-
-		cells.forEach((cellRow, i) => {
-			cellRow.forEach((cell, j) => {
-				if (cell.selected) {
-					row = i;
-					col = j;
-				}
-			});
-		});
-		return [row, col];
+	let selectedCell: [number, number] | null = null;
+	setSelectedCell(4, 1);
+	function setSelectedCell(row: number, col: number) {
+		if (selectedCell !== null) {
+			cells[selectedCell[0]][selectedCell[1]].selected = false;
+		}
+		cells[row][col].selected = true;
+		selectedCell = [row, col];
 	}
 
 	function getCurrentCell(cells: Node[][]) {
@@ -81,36 +71,34 @@
 
 	onMount(() => {
 		async function focusCell() {
+			if (selectedCell === null) return;
 			await tick();
-			const id = 'button-' + getKey(...getCurrentCellPosition(cells));
+			const id = 'button-' + getKey(...selectedCell);
 			const element = document.getElementById(id) as HTMLButtonElement;
 			element?.focus();
 		}
 		document.addEventListener('keydown', async (e) => {
-			const [row, col] = getCurrentCellPosition(cells);
+			if (selectedCell === null) return;
+			const [row, col] = selectedCell;
 			const cell = cells[row][col];
 
 			if (cell.editing === 'fullyEditing') return;
 
 			if (e.key === 'ArrowUp' && cells[row - 2]?.[col] !== undefined) {
-				cell.selected = false;
+				setSelectedCell(row - 1, col);
 				cell.editing = 'notEditing';
-				cells[row - 1][col].selected = true;
 				focusCell();
 			} else if (e.key === 'ArrowDown' && cells[row + 1]?.[col] !== undefined) {
-				cell.selected = false;
 				cell.editing = 'notEditing';
-				cells[row + 1][col].selected = true;
+				setSelectedCell(row + 1, col);
 				focusCell();
 			} else if (e.key === 'ArrowLeft' && cells[row]?.[col - 1] !== undefined) {
-				cell.selected = false;
 				cell.editing = 'notEditing';
-				cells[row][col - 1].selected = true;
+				setSelectedCell(row, col - 1);
 				focusCell();
 			} else if (e.key === 'ArrowRight' && cells[row]?.[col + 1] !== undefined) {
-				cell.selected = false;
 				cell.editing = 'notEditing';
-				cells[row][col + 1].selected = true;
+				setSelectedCell(row, col + 1);
 				focusCell();
 			} else if (e.key === 'Enter') {
 				cell.editing = 'fullyEditing';
@@ -145,7 +133,7 @@
 						ondblclickcapture={async (e) => {
 							if (cell.editing !== 'notEditing') return;
 							cell.editing = 'fullyEditing';
-							cell.selected = true;
+							setSelectedCell(rowIndex, colIndex);
 
 							const element = e.currentTarget;
 							if (element.firstElementChild) {
@@ -156,11 +144,9 @@
 								}
 							}
 						}}
-						onclick={async (event) => {
+						onclick={async () => {
 							if (cell.editing !== 'notEditing') return;
-							const [row, col] = getCurrentCellPosition(cells);
-							cells[row][col].selected = false;
-							cell.selected = true;
+							setSelectedCell(rowIndex, colIndex);
 							cell.editing = 'notEditing';
 						}}
 						onkeypress={async (e) => {
