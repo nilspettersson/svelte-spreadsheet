@@ -14,15 +14,24 @@
 			Array.from({ length: 26 }, () => ({ value: '', editing: 'notEditing', selected: false }))
 		)
 	);
-	cells[1][0].value = 'Date';
-	cells[1][1].value = 'Amount';
-	cells[2][0].value = '2024-12-23';
-	cells[2][1].value = '5000';
-	cells[3][0].value = '2024-12-24';
-	cells[3][1].value = '1200';
-	cells[4][0].value = '2024-12-26';
-	cells[4][1].value = '140';
-	cells[5][1].value = '=SUM(B2:B4)';
+
+	if (typeof localStorage !== 'undefined' && localStorage.getItem('cells')) {
+		const values = JSON.parse(localStorage.getItem('cells')!) as string[][];
+		values.forEach((row, i) =>
+			row.forEach((value, j) => {
+				if (value !== '') {
+					cells[i][j].value = value;
+				}
+			})
+		);
+	}
+
+	$effect(() => {
+		localStorage.setItem(
+			'cells',
+			JSON.stringify(cells.map((row) => row.map((cell) => cell.value)))
+		);
+	});
 
 	function getKey(row: number, col: number) {
 		const rowName = row;
@@ -31,33 +40,37 @@
 	}
 
 	function calculateFunction(value: string) {
-		if (value.includes('=SUM')) {
-			const start = value.indexOf('(') + 1;
-			const end = value.indexOf(')');
-			const range = value.substring(start, end);
-			const values = range.split(':');
-			let sum = 0;
-			const startRow = parseInt(values[0].substring(1));
-			const startCol = values[0].charCodeAt(0) - 65;
-			const endRow = parseInt(values[1].substring(1));
-			const endCol = values[1].charCodeAt(0) - 65;
+		const start = value.indexOf('(') + 1;
+		const end = value.indexOf(')');
+		const range = value.substring(start, end);
+		const values = range.split(':');
+		let sum = 0;
+		const startRow = parseInt(values[0].substring(1));
+		const startCol = values[0].charCodeAt(0) - 65;
+		const endRow = parseInt(values[1].substring(1));
+		const endCol = values[1].charCodeAt(0) - 65;
 
-			for (let row = startRow; row <= endRow; row++) {
-				for (let col = startCol; col <= endCol; col++) {
-					const node = cells[row][col];
-					if (node === undefined) continue;
-					const value = parseInt(node.value);
-					if (!isNaN(value)) {
-						sum += value;
-					}
+		for (let row = startRow; row <= endRow; row++) {
+			for (let col = startCol; col <= endCol; col++) {
+				const node = cells[row][col];
+				if (node === undefined) continue;
+				const value = parseInt(node.value);
+				if (!isNaN(value)) {
+					sum += value;
 				}
 			}
+		}
+
+		if (value.includes('=SUM')) {
 			return sum;
+		} else if (value.includes('=AVERAGE')) {
+			const totalCellCount = (startCol - endCol + 1) * (endRow - startRow + 1);
+			return sum / totalCellCount;
 		}
 	}
 
 	let selectedCell: [number, number] | null = $state(null);
-	setSelectedCell(4, 1);
+	//setSelectedCell(4, 1);
 	function setSelectedCell(row: number, col: number) {
 		if (selectedCell !== null) {
 			cells[selectedCell[0]][selectedCell[1]].selected = false;
@@ -116,7 +129,7 @@
 <div class="flex gap-2 py-2">
 	<p class="w-12 border-r text-center text-sm">{getKey(...(selectedCell ?? [0, 0]))}</p>
 	<div class="flex items-center">
-		<MaterialSymbolsFunctionRounded class=" size-5 text-muted-foreground" />
+		<MaterialSymbolsFunctionRounded class="size-5 text-muted-foreground" />
 		<p class="text-sm text-foreground/80">
 			{cells[selectedCell?.[0] ?? 0][selectedCell?.[1] ?? 0].value}
 		</p>
@@ -155,7 +168,7 @@
 								}
 							}
 						}}
-						onclick={async (e) => {
+						onmousedown={async (e) => {
 							if (cell.editing !== 'notEditing') return;
 							setSelectedCell(rowIndex, colIndex);
 							cell.editing = 'notEditing';
