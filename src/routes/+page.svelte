@@ -143,113 +143,123 @@
 		</p>
 	</div>
 </div>
-<div class="flex h-0 w-full grow flex-col overflow-auto border-border/60">
-	{#each cells as row, rowIndex}
-		<div class="flex w-min first:border-t">
+<div class="relative flex h-0 w-full grow overflow-auto border-border/60">
+	<div class="sticky left-0 flex grow flex-col border-border/60">
+		{#each cells as row, rowIndex}
 			<button
 				class={cn(
-					'flex h-6 w-12 items-center justify-center border-b border-l border-border text-right text-sm last:border-r'
+					'flex h-6 w-12 items-center justify-center border-b border-l border-r border-border bg-background p-1 text-right text-sm first:border-t'
 				)}
 				>{rowIndex}
 			</button>
-			{#each row as cell, colIndex}
-				{#if rowIndex === 0}
-					<button
-						class={cn(
-							'flex h-6 w-24 items-center justify-center border-b border-l border-border text-right text-sm last:border-r'
-						)}>{String.fromCharCode(colIndex + 65)}</button
-					>
-				{:else}
-					<button
-						id={'button-' + getKey(rowIndex, colIndex)}
-						ondblclickcapture={async (e) => {
-							if (cell.editing !== 'notEditing') return;
-							cell.editing = 'fullyEditing';
-							setSelectedCell(rowIndex, colIndex);
+		{/each}
+	</div>
 
-							const element = e.currentTarget;
-							if (element.firstElementChild) {
-								await tick();
-								const input = element.firstElementChild as HTMLInputElement | undefined;
-								if (input) {
-									input.focus();
-								}
-							}
-						}}
-						onmousedown={async (e) => {
-							if (cell.editing !== 'notEditing') return;
-							setSelectedCell(rowIndex, colIndex);
-							cell.editing = 'notEditing';
-						}}
-						onkeydown={async (e) => {
-							if (cell.editing !== 'notEditing' || e.key === 'Enter') return;
-
-							if (e.key === 'Backspace') {
-								cell.value = '';
-								return;
-							}
-							cell.editing = 'addingText';
-
-							const element = e.currentTarget;
-							if (element.firstElementChild) {
-								await tick();
-								const input = element.firstElementChild as HTMLInputElement | undefined;
-								if (input) {
-									input.value = '';
-									input.focus();
-								}
-							}
-						}}
-						class={cn(
-							'focus-within:outline-none',
-							'flex h-6 w-24 items-center justify-end overflow-hidden whitespace-nowrap border-b border-l border-border text-right text-sm last:border-r',
-							isNaN(parseInt(cell.value)) && 'justify-start',
-							cell.selected && 'border-2 border-primary'
-						)}
-					>
-						{#if cell.selected && cell.editing !== 'notEditing'}
-							<input
-								id={getKey(rowIndex, colIndex)}
-								value={cell.value ?? ''}
-								type="text"
-								class="h-full w-full p-1"
-								onfocusout={(e) => {
-									cell.editing = 'notEditing';
-								}}
-								onchange={(e) => {
-									cell.value = e.currentTarget.value;
-									cell.editing = 'notEditing';
-								}}
-								onkeydown={async (e) => {
-									if (e.key === 'Enter' && cell.editing !== 'notEditing') {
-										e.stopImmediatePropagation();
-										cell.editing = 'notEditing';
-										cell.value = e.currentTarget.value;
-										setSelectedCell(rowIndex + 1, colIndex);
-										await tick();
-										const element = document.getElementById(
-											'button-' + getKey(rowIndex + 1, colIndex)
-										) as HTMLButtonElement | undefined;
-										if (element) {
-											if (element) {
-												element.focus();
-											}
-										}
-									}
-								}}
-							/>
-						{:else if cell.value.length > 0}
-							{#if cell.value.startsWith('=')}
-								<span class="p-1">{calculateFunction(cell.value)}</span>
-							{:else}
-								<span class="p-1">{cell.value}</span>
-							{/if}
-						{:else}
-							<span></span>
-						{/if}
-					</button>
-				{/if}
+	<div class="flex h-full w-full grow flex-col border-border/60">
+		<div class="flex grow border-border/60">
+			{#each cells[0] as cell, colIndex}
+				<button
+					class={cn(
+						'flex h-6 w-24 shrink-0 items-center justify-center border-b border-l border-t border-border p-1 text-right text-sm last:border-r'
+					)}>{String.fromCharCode(colIndex + 65)}</button
+				>
 			{/each}
 		</div>
-	{/each}
+		{#each cells as row, rowIndex}
+			<div class="flex w-min first:border-t">
+				{#each row as cell, colIndex}
+					{#if rowIndex !== 0}
+						<button
+							id={'button-' + getKey(rowIndex, colIndex)}
+							ondblclickcapture={async (e) => {
+								if (cell.editing !== 'notEditing') return;
+								cell.editing = 'fullyEditing';
+								setSelectedCell(rowIndex, colIndex);
+
+								const element = e.currentTarget;
+								if (element.firstElementChild) {
+									await tick();
+									const input = element.firstElementChild as HTMLInputElement | undefined;
+									if (input) {
+										input.focus();
+									}
+								}
+							}}
+							onmousedown={async (e) => {
+								if (cell.editing !== 'notEditing') return;
+								setSelectedCell(rowIndex, colIndex);
+								cell.editing = 'notEditing';
+							}}
+							onkeydown={async (e) => {
+								if (cell.editing !== 'notEditing' || e.key === 'Enter') return;
+
+								if (e.key === 'Backspace') {
+									cell.value = '';
+									return;
+								}
+								cell.editing = 'addingText';
+
+								const element = e.currentTarget;
+								if (element.firstElementChild) {
+									await tick();
+									const input = element.firstElementChild as HTMLInputElement | undefined;
+									if (input) {
+										input.value = '';
+										input.focus();
+									}
+								}
+							}}
+							class={cn(
+								'focus-within:outline-none',
+								'flex h-6 w-24 items-center justify-end overflow-hidden whitespace-nowrap border-b border-r border-border text-right text-sm',
+								isNaN(parseInt(cell.value)) && 'justify-start',
+								cell.selected && 'border-2 border-primary'
+							)}
+						>
+							{#if cell.selected && cell.editing !== 'notEditing'}
+								<input
+									id={getKey(rowIndex, colIndex)}
+									value={cell.value ?? ''}
+									type="text"
+									class="h-full w-full p-1"
+									onfocusout={(e) => {
+										cell.editing = 'notEditing';
+									}}
+									onchange={(e) => {
+										cell.value = e.currentTarget.value;
+										cell.editing = 'notEditing';
+									}}
+									onkeydown={async (e) => {
+										if (e.key === 'Enter' && cell.editing !== 'notEditing') {
+											e.stopImmediatePropagation();
+											cell.editing = 'notEditing';
+											cell.value = e.currentTarget.value;
+											setSelectedCell(rowIndex + 1, colIndex);
+											await tick();
+											const element = document.getElementById(
+												'button-' + getKey(rowIndex + 1, colIndex)
+											) as HTMLButtonElement | undefined;
+											if (element) {
+												if (element) {
+													element.focus();
+												}
+											}
+										}
+									}}
+								/>
+							{:else if cell.value.length > 0}
+								{#if cell.value.startsWith('=')}
+									<span class="p-1">{calculateFunction(cell.value)}</span>
+								{:else}
+									<span class="p-1">{cell.value}</span>
+								{/if}
+							{:else}
+								<span></span>
+							{/if}
+						</button>
+					{/if}
+				{/each}
+			</div>
+		{/each}
+	</div>
 </div>
