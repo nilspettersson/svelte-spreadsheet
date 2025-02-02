@@ -144,8 +144,8 @@
 	</div>
 </div>
 <div class="relative flex h-0 w-full grow overflow-auto border-border/60">
-	<div class="sticky left-0 flex grow flex-col border-border/60">
-		{#each cells as row, rowIndex}
+	<div class="sticky left-0 z-10 flex grow flex-col border-border/60">
+		{#each cells as _row, rowIndex}
 			<button
 				class={cn(
 					'flex h-6 w-12 items-center justify-center border-b border-l border-r border-border bg-background p-1 text-right text-sm first:border-t'
@@ -155,12 +155,12 @@
 		{/each}
 	</div>
 
-	<div class="flex h-full w-full grow flex-col border-border/60">
-		<div class="flex grow border-border/60">
+	<div class="flex h-[1000rem] w-full grow flex-col border-border/60">
+		<div class="sticky top-0 flex grow border-border/60">
 			{#each cells[0] as cell, colIndex}
 				<button
 					class={cn(
-						'flex h-6 w-24 shrink-0 items-center justify-center border-b border-l border-t border-border p-1 text-right text-sm last:border-r'
+						'flex h-6 w-24 shrink-0 items-center justify-center border-b border-l border-t border-border bg-background p-1 text-right text-sm last:border-r'
 					)}>{String.fromCharCode(colIndex + 65)}</button
 				>
 			{/each}
