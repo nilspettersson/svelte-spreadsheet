@@ -124,6 +124,14 @@
 			}
 		});
 	});
+
+	function getCurrentCellValue() {
+		if (selectedCell === null) return '';
+
+		return cells[selectedCell[0]][selectedCell[1]]
+			? cells[selectedCell[0]][selectedCell[1]].value
+			: '';
+	}
 </script>
 
 <div class="flex gap-2 py-2">
@@ -131,7 +139,7 @@
 	<div class="flex items-center">
 		<MaterialSymbolsFunctionRounded class="size-5 text-muted-foreground" />
 		<p class="text-sm text-foreground/80">
-			{cells[selectedCell?.[0] ?? 0][selectedCell?.[1] ?? 0].value}
+			{getCurrentCellValue()}
 		</p>
 	</div>
 </div>
