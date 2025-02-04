@@ -197,34 +197,41 @@
 								}}
 								onmousedown={async (e) => {
 									if (!e.ctrlKey) {
-										/*cells.forEach((row) => {
+										cells.forEach((row) => {
 											row.forEach((cell) => {
 												cell.groupSelected = false;
 											});
-										});*/
-										let startX = Math.min(dragSelector.startX, dragSelector.endX);
+										});
+										/*let startX = Math.min(dragSelector.startX, dragSelector.endX);
 										let startY = Math.min(dragSelector.startY, dragSelector.endY) + 1;
 										let endX = Math.max(dragSelector.startX, dragSelector.endX);
 										let endY = Math.max(dragSelector.startY, dragSelector.endY) + 1;
 										for (let x = startX; x < endX; x++) {
 											for (let y = startY; y < endY; y++) {
-												const cell = cells[y][x];
+												const cell = cells[y]?.[x];
+												if (!cell) continue;
 												cell.groupSelected = false;
 											}
-										}
+										}*/
 									}
 
 									dragSelector.drag = true;
 									dragSelector.startX = colIndex;
 									dragSelector.startY = rowIndex - 1;
+									dragSelector.endX = -1;
+									dragSelector.endY = -1;
 
 									if (cell.editing !== 'notEditing') return;
 									setSelectedCell(rowIndex, colIndex);
 									cell.editing = 'notEditing';
 								}}
 								onmouseup={async (e) => {
-									console.log('mouse up');
+									if (!dragSelector.drag || dragSelector.endX === -1) {
+										dragSelector.drag = false;
+										return;
+									}
 									dragSelector.drag = false;
+									console.log('mouse up');
 
 									let startX = Math.min(dragSelector.startX, dragSelector.endX);
 									let startY = Math.min(dragSelector.startY, dragSelector.endY) + 1;
