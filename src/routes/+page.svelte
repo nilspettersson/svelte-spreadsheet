@@ -199,7 +199,9 @@
 									if (!e.ctrlKey) {
 										cells.forEach((row) => {
 											row.forEach((cell) => {
-												cell.groupSelected = false;
+												if (cell.groupSelected) {
+													cell.groupSelected = false;
+												}
 											});
 										});
 										/*let startX = Math.min(dragSelector.startX, dragSelector.endX);
