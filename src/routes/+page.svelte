@@ -22,6 +22,10 @@
 			}))
 		)
 	);
+	let cellSize = {
+		width: 0,
+		height: 0
+	};
 
 	if (typeof localStorage !== 'undefined' && localStorage.getItem('cells')) {
 		const values = JSON.parse(localStorage.getItem('cells')!) as string[][];
@@ -204,17 +208,6 @@
 												}
 											});
 										});
-										/*let startX = Math.min(dragSelector.startX, dragSelector.endX);
-										let startY = Math.min(dragSelector.startY, dragSelector.endY) + 1;
-										let endX = Math.max(dragSelector.startX, dragSelector.endX);
-										let endY = Math.max(dragSelector.startY, dragSelector.endY) + 1;
-										for (let x = startX; x < endX; x++) {
-											for (let y = startY; y < endY; y++) {
-												const cell = cells[y]?.[x];
-												if (!cell) continue;
-												cell.groupSelected = false;
-											}
-										}*/
 									}
 
 									dragSelector.drag = true;
@@ -222,6 +215,10 @@
 									dragSelector.startY = rowIndex - 1;
 									dragSelector.endX = -1;
 									dragSelector.endY = -1;
+
+									const cellRect = e.currentTarget.getBoundingClientRect();
+									cellSize.width = cellRect.width;
+									cellSize.height = cellRect.height;
 
 									if (cell.editing !== 'notEditing') return;
 									setSelectedCell(rowIndex, colIndex);
@@ -265,7 +262,6 @@
 								}}
 								onmouseover={async (e) => {
 									if (!dragSelector.drag) return;
-									const cellRect = e.currentTarget.getBoundingClientRect();
 									let dragRect = document.getElementById('drag-react');
 									if (!dragRect) return;
 
@@ -282,10 +278,10 @@
 										tempDrag.endY--;
 									}
 
-									let sx = Math.min(tempDrag.startX, tempDrag.endX) * cellRect.width;
-									let sy = Math.min(tempDrag.startY, tempDrag.endY) * cellRect.height;
-									let width = Math.abs(tempDrag.endX - tempDrag.startX) * cellRect.width;
-									let height = Math.abs(tempDrag.endY - tempDrag.startY) * cellRect.height;
+									let sx = Math.min(tempDrag.startX, tempDrag.endX) * cellSize.width;
+									let sy = Math.min(tempDrag.startY, tempDrag.endY) * cellSize.height;
+									let width = Math.abs(tempDrag.endX - tempDrag.startX) * cellSize.width;
+									let height = Math.abs(tempDrag.endY - tempDrag.startY) * cellSize.height;
 
 									dragRect.style.left = sx + 'px';
 									dragRect.style.top = sy + 'px';
