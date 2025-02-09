@@ -117,7 +117,6 @@
 				await tick();
 				const element = document.getElementById(getKey(row, col)) as HTMLInputElement;
 				element?.focus();
-				console.log(element);
 
 				return;
 			}
@@ -230,7 +229,6 @@
 										return;
 									}
 									dragSelector.drag = false;
-									console.log('mouse up');
 
 									let startX = Math.min(dragSelector.startX, dragSelector.endX);
 									let startY = Math.min(dragSelector.startY, dragSelector.endY) + 1;
@@ -290,10 +288,31 @@
 								}}
 								onfocus={async (e) => {}}
 								onkeydown={async (e) => {
-									if (cell.editing !== 'notEditing' || e.key === 'Enter') return;
+									//todo: find a better solution for this.
+									if (
+										cell.editing !== 'notEditing' ||
+										e.key === 'Enter' ||
+										e.key === 'Escape' ||
+										e.key === 'Tab' ||
+										e.key === 'Shift' ||
+										e.key === 'Control' ||
+										e.key === 'Alt' ||
+										e.key === 'Meta' ||
+										e.key === 'CapsLock' ||
+										e.key === 'NumLock' ||
+										e.key === 'ScrollLock'
+									)
+										return;
 
 									if (e.key === 'Backspace') {
 										cell.value = '';
+										cells.forEach((row) => {
+											row.forEach((cell) => {
+												if (cell.groupSelected) {
+													cell.value = '';
+												}
+											});
+										});
 										return;
 									}
 									cell.editing = 'addingText';
