@@ -127,6 +127,14 @@
 				e.key === 'ArrowLeft' ||
 				e.key === 'ArrowRight'
 			) {
+				cells.forEach((row) => {
+					row.forEach((cell) => {
+						if (cell.groupSelected) {
+							cell.groupSelected = false;
+						}
+					});
+				});
+
 				cell.editing = 'notEditing';
 				e.preventDefault();
 				e.stopImmediatePropagation();
@@ -154,11 +162,12 @@
 	</div>
 </div>
 <div class="relative flex h-0 w-full grow overflow-auto border-border/60">
-	<div class="sticky left-0 z-10 flex grow flex-col border-border/60">
+	<div class="sticky left-0 z-20 flex grow flex-col border-border/60">
 		{#each cells as _row, rowIndex}
 			<button
 				class={cn(
-					'flex h-6 w-12 items-center justify-center border-b border-l border-r border-border bg-background p-1 text-right text-sm first:border-t'
+					'flex h-6 w-12 items-center justify-center border-b border-l border-r border-border bg-background p-1 text-right text-sm first:border-t',
+					selectedCell?.[0] === rowIndex ? 'bg-primary/25' : ''
 				)}
 				>{rowIndex}
 			</button>
@@ -166,11 +175,12 @@
 	</div>
 
 	<div class="flex h-[1000rem] w-full grow flex-col border-border/60">
-		<div class="sticky top-0 flex grow border-border/60">
-			{#each cells[0] as cell, colIndex}
+		<div class="sticky top-0 z-10 flex grow border-border/60">
+			{#each cells[0] as _cell, colIndex}
 				<button
 					class={cn(
-						'flex h-6 w-24 shrink-0 items-center justify-center border-b border-l border-t border-border bg-background p-1 text-right text-sm last:border-r'
+						'flex h-6 w-24 shrink-0 items-center justify-center border-b border-l border-t border-border bg-background p-1 text-right text-sm last:border-r',
+						selectedCell?.[1] === colIndex ? 'bg-primary/25' : ''
 					)}>{String.fromCharCode(colIndex + 65)}</button
 				>
 			{/each}
@@ -266,7 +276,7 @@
 									dragSelector.endX = colIndex + 1;
 									dragSelector.endY = rowIndex;
 
-									const tempDrag = structuredClone($state.snapshot(dragSelector));
+									const tempDrag = { ...$state.snapshot(dragSelector) };
 									if (dragSelector.startX >= dragSelector.endX) {
 										tempDrag.startX++;
 										tempDrag.endX--;
@@ -288,19 +298,20 @@
 								}}
 								onfocus={async (e) => {}}
 								onkeydown={async (e) => {
-									//todo: find a better solution for this.
 									if (
 										cell.editing !== 'notEditing' ||
-										e.key === 'Enter' ||
-										e.key === 'Escape' ||
-										e.key === 'Tab' ||
-										e.key === 'Shift' ||
-										e.key === 'Control' ||
-										e.key === 'Alt' ||
-										e.key === 'Meta' ||
-										e.key === 'CapsLock' ||
-										e.key === 'NumLock' ||
-										e.key === 'ScrollLock'
+										[
+											'Enter',
+											'Escape',
+											'Tab',
+											'Shift',
+											'Control',
+											'Alt',
+											'Meta',
+											'CapsLock',
+											'NumLock',
+											'ScrollLock'
+										].includes(e.key)
 									)
 										return;
 
