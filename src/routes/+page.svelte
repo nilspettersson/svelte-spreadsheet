@@ -62,12 +62,14 @@
 		const endRow = parseInt(values[1].substring(1));
 		const endCol = values[1].charCodeAt(0) - 65;
 
+		let totalCellCount = 0;
 		for (let row = startRow; row <= endRow; row++) {
 			for (let col = startCol; col <= endCol; col++) {
 				const node = cells[row][col];
 				if (node === undefined) continue;
 				const value = parseInt(node.value);
 				if (!isNaN(value)) {
+					totalCellCount++;
 					sum += value;
 				}
 			}
@@ -76,8 +78,7 @@
 		if (value.includes('=SUM')) {
 			return sum;
 		} else if (value.includes('=AVERAGE')) {
-			const totalCellCount = (startCol - endCol + 1) * (endRow - startRow + 1);
-			return sum / totalCellCount;
+			return totalCellCount > 0 ? sum / totalCellCount : sum;
 		}
 	}
 
